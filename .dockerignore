@@ -1,0 +1,8 @@
+vendor/
+node_modules/
+.git/
+.env
+database/database.sqlite
+storage/logs/*.log
+storage/framework/views/*.php
+docker-compose.override.yml

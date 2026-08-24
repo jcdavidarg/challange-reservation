@@ -1,0 +1,38 @@
+services:
+  db:
+    image: mariadb:11
+    environment:
+      MARIADB_ROOT_PASSWORD: secret
+      MARIADB_DATABASE: reservas
+      MARIADB_USER: reservas
+      MARIADB_PASSWORD: secret
+    volumes:
+      - dbdata:/var/lib/mysql
+      - ./docker/db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    # El puerto no se publica: la DB solo es accesible dentro de la red de compose
+    # (y asi no choca con un MariaDB local en el 3306). Para inspeccionarla:
+    #   docker compose exec db mariadb -ureservas -psecret reservas
+
+  app:
+    build: .
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      LOG_LEVEL: debug
+      # OJO: aca NO se inyectan DB_* como variables de entorno. El entrypoint
+      # escribe esas claves dentro del .env del contenedor, que es la unica
+      # fuente de verdad: si DB_DATABASE viniera por entorno real, los tests
+      # (`php artisan test`) la pisarian y borrarian la base demo.
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+volumes:
+  dbdata:
